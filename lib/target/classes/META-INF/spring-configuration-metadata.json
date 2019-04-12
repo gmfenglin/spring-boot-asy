@@ -1,0 +1,32 @@
+{
+  "groups": [
+    {
+      "name": "thread-pool",
+      "type": "com.feng.lin.web.lib.config.property.ThreadPoolProperty",
+      "sourceType": "com.feng.lin.web.lib.config.property.ThreadPoolProperty"
+    }
+  ],
+  "properties": [
+    {
+      "name": "thread-pool.core-pool-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.feng.lin.web.lib.config.property.ThreadPoolProperty"
+    },
+    {
+      "name": "thread-pool.max-pool-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.feng.lin.web.lib.config.property.ThreadPoolProperty"
+    },
+    {
+      "name": "thread-pool.queue-capacity",
+      "type": "java.lang.Integer",
+      "sourceType": "com.feng.lin.web.lib.config.property.ThreadPoolProperty"
+    },
+    {
+      "name": "thread-pool.thread-name-prefix",
+      "type": "java.lang.String",
+      "sourceType": "com.feng.lin.web.lib.config.property.ThreadPoolProperty"
+    }
+  ],
+  "hints": []
+}
