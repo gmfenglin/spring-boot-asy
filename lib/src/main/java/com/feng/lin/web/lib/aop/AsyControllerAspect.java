@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.executable.ExecutableValidator;
 
@@ -157,7 +158,7 @@ public class AsyControllerAspect {
 					if (filed.equals(item.getPropertyPath().toString())) {
 						Annotation annotation = item.getConstraintDescriptor().getAnnotation();
 						// 4.允许为空
-						if (annotation.annotationType().equals(NotNull.class)) {
+						if (annotation.annotationType().equals(NotNull.class)||annotation.annotationType().equals(NotBlank.class)) {
 							flag = true;
 							break;
 						}

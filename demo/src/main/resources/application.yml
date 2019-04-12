@@ -1,7 +1,0 @@
-thread-pool: 
-  core-pool-size: 5
-  max-pool-size: 5
-  queue-capacity: 99999
-  thread-name-prefix: async-service-
-  timeout: 5000
-  

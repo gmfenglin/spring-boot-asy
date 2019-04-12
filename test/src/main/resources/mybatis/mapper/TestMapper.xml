@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.feng.lin.test.demo.dao.mapper.TestMapper">
+	<insert id="saveTest" keyProperty="id" useGeneratedKeys="true">
+		insert into test(
+				name,
+				gmt_create,
+				gmt_modified,
+				user_create,
+				user_modified
+		 )
+		values (
+	     					#{name},
+	    					now(),
+	    					now(),
+	     					#{userCreate},
+     					#{userModified}
+		);
+	</insert>
+	<update id="modifyTest" >
+		update test
+		set
+					<if test="isDeleted!=null">
+						is_deleted=#{isDeleted},
+					</if>
+					<if test="name!=null">
+						name=#{name},
+					</if>
+					<if test="status!=null">
+						status=#{status},
+					</if>
+			gmt_modified=now(),
+			user_modified=#{userModified}
+		where id=#{id}
+	</update>
+	<select id="getTestById" resultType="com.feng.lin.test.demo.dao.model.Test">
+		select
+		 		test.gmt_create as gmtCreate,
+		 		test.is_deleted as isDeleted,
+		 		test.name as name,
+		 		test.id as id,
+		 		test.gmt_modified as gmtModified,
+		 		test.user_create as userCreate,
+		 		test.user_modified as userModified,
+		 		test.status as status
+		from test
+		where id=#{id}
+	</select>
+	<select id="count" resultType="int">
+		select count(*) from test
+	</select>
+	<select id="page" resultType="com.feng.lin.test.demo.dao.model.Test">
+		select 
+		 		test.gmt_create as gmtCreate,
+		 		test.is_deleted as isDeleted,
+		 		test.name as name,
+		 		test.id as id,
+		 		test.gmt_modified as gmtModified,
+		 		test.user_create as userCreate,
+		 		test.user_modified as userModified,
+		 		test.status as status
+		from test
+	</select>
+</mapper>
