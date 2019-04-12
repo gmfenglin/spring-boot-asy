@@ -1,10 +1,13 @@
 package com.feng.lin.test.demo.dao.model;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 
 import javax.validation.constraints.NotBlank;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel("Test")
 public class Test extends AbstractModel implements Serializable {
 
 	@Override
@@ -14,6 +17,7 @@ public class Test extends AbstractModel implements Serializable {
 
 	// 姓名
 	@NotBlank
+	@ApiModelProperty(value = "name")
 	private String name;
 
 	public String getName() {

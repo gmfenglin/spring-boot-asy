@@ -6,6 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.feng.lin.web.lib.controller.annotation.EnableFenglin;
 
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
 @SpringBootApplication
 @MapperScan(value="com.feng.lin.test.demo.dao.mapper")
 @EnableFenglin

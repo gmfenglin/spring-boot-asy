@@ -8,7 +8,6 @@ import java.util.Optional;
 import javax.validation.constraints.Min;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +25,11 @@ import com.feng.lin.web.lib.controller.annotation.Bean;
 import com.feng.lin.web.lib.controller.annotation.Beans;
 import com.feng.lin.web.lib.controller.annotation.EnAsyable;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
 @RequestMapping("/test")
+@Api("/test")
 @RestController
 public class TestController {
 	@Autowired
@@ -34,6 +37,7 @@ public class TestController {
 
 	@GetMapping("/{id}")
 	@EnAsyable
+	@ApiOperation("getById")
 	public Object getById(@PathVariable @Min(1) Integer id) {
 		Optional<Test> test = testService.getTestById(id);
 		if (test.isPresent()) {
@@ -47,6 +51,7 @@ public class TestController {
 
 	@GetMapping
 	@EnAsyable
+	@ApiOperation("getByCondition")
 	public Object getByCondition(TestCondition condition, Pager pager) {
 		int count = testService.count(condition);
 		if (count > 0) {
@@ -66,6 +71,7 @@ public class TestController {
 	@PostMapping
 	@Beans(beans = { @Bean(clsName = Test.class, ignoreRequire = {}) })
 	@EnAsyable
+	@ApiOperation("save")
 	public Object save(Test test) {
 		Optional<Test> testOptional = testService.saveTest(test);
 		if (testOptional.isPresent()) {
@@ -80,6 +86,7 @@ public class TestController {
 	@PutMapping("/{id}")
 	@Beans(beans = { @Bean(clsName = Test.class, ignoreRequire = {"name"}) })
 	@EnAsyable
+	@ApiOperation("modify")
 	public Object modify(Test test) {
 		int count = testService.modifyTest(test);
 		if (count > 0) {
