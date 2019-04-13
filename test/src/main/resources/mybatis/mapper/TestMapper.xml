@@ -48,7 +48,7 @@
 		where id=#{id}
 	</select>
 	<select id="count" resultType="int">
-		select count(*) from test
+		select count(*) from test 
 	</select>
 	<select id="page" resultType="com.feng.lin.test.demo.dao.model.Test">
 		select 

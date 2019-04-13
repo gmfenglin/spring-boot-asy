@@ -10,6 +10,8 @@ debug：当此属性设置为true时，将打印出logback内部日志信息，�
     <!-- 定义日志文件名称 -->
     <property name="appName" value="demo-springboot"></property>
     <!-- ch.qos.logback.core.ConsoleAppender 表示控制台输出 -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%date{yyyy-MM-dd HH:mm:ss} | %highlight(%-5level) | %cyan(%thread) | %boldGreen(%logger) | %cyan(%msg%n)"/>
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <!--
         日志输出格式：
@@ -20,14 +22,9 @@ debug：当此属性设置为true时，将打印出logback内部日志信息，�
 			%msg：日志消息，
 			%n是换行符
         -->
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <springProfile name="dev">
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} ----> [%thread] ---> %-5level %logger{50} - %msg%n</pattern>
-            </springProfile>
-            <springProfile name="!dev">
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} ==== [%thread] ==== %-5level %logger{50} - %msg%n</pattern>
-            </springProfile>
-        </layout>
+        <encoder charset="UTF-8">
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
     </appender>
 
     <!-- 滚动记录文件，先将日志记录到指定文件，当符合某个条件时，将日志记录到其他文件 -->  

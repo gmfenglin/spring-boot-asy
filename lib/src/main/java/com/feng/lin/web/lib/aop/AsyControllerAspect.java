@@ -1,7 +1,6 @@
 package com.feng.lin.web.lib.aop;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.HashMap;
@@ -10,6 +9,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -32,7 +34,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.task.AsyncTaskExecutor;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -55,7 +56,7 @@ public class AsyControllerAspect {
 
 	protected void debugLog(Supplier<String> supplier) {
 		if (logger.isDebugEnabled()) {
-			logger.debug(this.getClass().getSimpleName() + "---" + supplier.get());
+			logger.debug(supplier.get());
 		}
 	}
 
@@ -88,22 +89,14 @@ public class AsyControllerAspect {
 		MethodSignature methodSignature = (MethodSignature) signature;
 		String[] parameterNames = methodSignature.getParameterNames();
 		debugLog(() -> {
-			StringBuilder sb = new StringBuilder();
-
-			for (int i = 0; i < parameterNames.length; i++) {
-				if (i == parameterNames.length - 1) {
-					sb.append(parameterNames[i]).append(":").append(args[i]);
-				} else {
-					sb.append(parameterNames[i]).append(":").append(args[i]).append(",");
-				}
-
-			}
-			return pjp.getThis() + "---" + pjp.getSignature().getName() + "--" + sb.toString();
+			return pjp.getThis().getClass().getName() + "---" + pjp.getSignature().getName() + "--"
+					+ IntStream.range(0, args.length).mapToObj((i) -> {
+						return parameterNames[i] + ":" + args[i];
+					}).collect(Collectors.joining(","));
 		});
 		// 2.基本类型参数验证
 		ExecutableValidator execVal = validator.forExecutables();
 		Class<?>[] argTypes = new Class[args.length];
-
 		for (int i = 0; i < args.length; i++) {
 			argTypes[i] = args[i].getClass();
 		}
@@ -128,21 +121,14 @@ public class AsyControllerAspect {
 			throw argumentNotValidException;
 		}
 		// 3.对象参数验证
-		MethodParameter[] mpArray = new MethodParameter[args.length];
-		for (int i = 0; i < args.length; i++) {
-			mpArray[i] = new MethodParameter(method, i);
-		}
 		Map<String, String[]> filedMap = new HashMap<>();
 		if (method.isAnnotationPresent(Beans.class)) {
 			Beans beans = method.getAnnotation(Beans.class);
 			Bean[] beanArray = beans.beans();
-			for (int j = 0; j < beanArray.length; j++) {
-				Bean bean = beanArray[j];
+			for(Bean bean:beanArray) {
 				filedMap.put(bean.clsName().getName(), bean.ignoreRequire());
 			}
-
 		}
-
 		for (int i = 0; i < args.length; i++) {
 			Object arg = args[i];
 			String clsName = arg.getClass().getName();
@@ -158,7 +144,8 @@ public class AsyControllerAspect {
 					if (filed.equals(item.getPropertyPath().toString())) {
 						Annotation annotation = item.getConstraintDescriptor().getAnnotation();
 						// 4.允许为空
-						if (annotation.annotationType().equals(NotNull.class)||annotation.annotationType().equals(NotBlank.class)) {
+						if (annotation.annotationType().equals(NotNull.class)
+								|| annotation.annotationType().equals(NotBlank.class)) {
 							flag = true;
 							break;
 						}
@@ -186,7 +173,7 @@ public class AsyControllerAspect {
 		return asyncWrap((DeferredResult<Object> deferredResult) -> {
 			long startTime = new Date().getTime();
 			debugLog(() -> {
-				return "start thread:" + new Date().getTime();
+				return Thread.currentThread().getName()+" thread start:" + new Date().getTime();
 			});
 			try {
 				deferredResult.setResult(pjp.proceed());
@@ -196,7 +183,7 @@ public class AsyControllerAspect {
 			}
 			debugLog(() -> {
 				long now = new Date().getTime();
-				return "end thread:" + now + ",耗时：" + (now - startTime);
+				return Thread.currentThread().getName()+" thread end:" + now + ",耗时：" + (now - startTime);
 			});
 		});
 	}
