@@ -37,7 +37,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import com.feng.lin.web.lib.controller.annotation.Bean;
-import com.feng.lin.web.lib.controller.annotation.EnFenglinable;
+import com.feng.lin.web.lib.controller.annotation.EnableFenglinable;
 
 @Aspect
 @Configuration
@@ -78,7 +78,7 @@ public class AsyControllerAspect {
 	}
 
 	@Around("@annotation(fenglinable)")
-	public Object handleControllerOfMethod(ProceedingJoinPoint pjp, EnFenglinable fenglinable) throws Throwable {
+	public Object handleControllerOfMethod(ProceedingJoinPoint pjp, EnableFenglinable fenglinable) throws Throwable {
 		Object o = pjp.getThis();
 		// 1. 参数解析
 		Object[] args = pjp.getArgs();
