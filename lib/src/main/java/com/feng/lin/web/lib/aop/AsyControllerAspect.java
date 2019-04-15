@@ -1,9 +1,12 @@
 package com.feng.lin.web.lib.aop;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -11,12 +14,11 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.executable.ExecutableValidator;
 
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -77,6 +79,24 @@ public class AsyControllerAspect {
 		return (validatedAnn != null ? validatedAnn.value() : new Class<?>[0]);
 	}
 
+	public int indexOf(Object[] args, Object arg) {
+		for (int i = 0; i < args.length; i++) {
+			if (arg.equals(args[i])) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	public boolean isIn(Object[] args, Object arg) {
+		for (int i = 0; i < args.length; i++) {
+			if (arg.equals(args[i])) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Around("@annotation(fenglinable)")
 	public Object handleControllerOfMethod(ProceedingJoinPoint pjp, EnableFenglinable fenglinable) throws Throwable {
 		Object o = pjp.getThis();
@@ -116,41 +136,45 @@ public class AsyControllerAspect {
 				throw argumentNotValidException;
 			}
 			// 3.对象参数验证
-			Map<String, String[]> filedMap = new HashMap<>();
-			Bean[] beanArray = fenglinable.beans();
-			for (Bean bean : beanArray) {
-				filedMap.put(bean.clsName().getName(), bean.ignoreRequire());
-			}
-			for (int i = 0; i < args.length; i++) {
-				Object arg = args[i];
-				String clsName = arg.getClass().getName();
-				if (!filedMap.containsKey(clsName)) {
-					continue;
-				}
-				Set<ConstraintViolation<Object>> validateSet = validator.validate(arg);
-
-				String[] filedList = filedMap.get(clsName);
-				for (ConstraintViolation<Object> item : validateSet) {
-					boolean flag = false;
-					for (String filed : filedList) {
-						if (filed.equals(item.getPropertyPath().toString())) {
-							Annotation annotation = item.getConstraintDescriptor().getAnnotation();
-							// 4.允许为空
-							if (annotation.annotationType().equals(NotNull.class)
-									|| annotation.annotationType().equals(NotBlank.class)) {
-								flag = true;
-								break;
-							}
+			Map<String, Class<?>[]> filedMap = new HashMap<>();
+			Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+			IntStream.range(0, parameterAnnotations.length).forEach((i) -> {
+				Stream.of(parameterAnnotations[i]).filter((annotation) -> {
+					return annotation.annotationType().equals(Bean.class);
+				}).forEach((annotation) -> {
+					Bean bean = (Bean) annotation;
+					filedMap.put(args[i].getClass().getName(), bean.groups());
+				});
+			});
+			Stream.of(args).filter((arg) -> {
+				return filedMap.containsKey(arg.getClass().getName());
+			}).forEach((arg) -> {
+				Class<?>[] groups = filedMap.get(arg.getClass().getName());
+				Field[] fields = arg.getClass().getDeclaredFields();
+				for (Field field : fields) {
+					List<FieldError> fieldErrors=new ArrayList<>();
+					for (Class<?> group : groups) {
+						Set<ConstraintViolation<Object>> set = validator.validateProperty(arg, field.getName(), group);
+						for (ConstraintViolation<Object> item : set) {
+							FieldError fieldError = new FieldError(parameterNames[indexOf(args, arg)],
+									item.getPropertyPath().toString(), item.getMessage());
+							fieldErrors.add(fieldError);
+						}
+						if (set.size() == 0) {
+							fieldErrors.clear();
+							break;
 						}
 					}
-					if (!flag) {
-						FieldError fieldError = new FieldError(parameterNames[i], item.getPropertyPath().toString(),
-								item.getMessage());
-						argumentNotValidException.getFieldErrors().add(fieldError);
+					if(fieldErrors.size()>0) {
+						for(FieldError fieldError:fieldErrors) {
+							argumentNotValidException.getFieldErrors().add(fieldError);
+						}
+						break;
 					}
+					
 				}
 
-			}
+			});
 			if (argumentNotValidException.getFieldErrors().size() > 0) {
 				debugLog(() -> {
 					return method.getName() + "--"

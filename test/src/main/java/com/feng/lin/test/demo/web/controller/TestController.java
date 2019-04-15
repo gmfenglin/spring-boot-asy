@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.feng.lin.test.demo.dao.dto.query.Pager;
 import com.feng.lin.test.demo.dao.dto.query.TestCondition;
 import com.feng.lin.test.demo.dao.model.Test;
+import com.feng.lin.test.demo.dao.model.Test.ModifiedNotNull;
+import com.feng.lin.test.demo.dao.model.Test.ModifiedNull;
+import com.feng.lin.test.demo.dao.model.Test.Save;
 import com.feng.lin.test.demo.service.TestService;
 import com.feng.lin.web.lib.controller.ResponseMessage;
 import com.feng.lin.web.lib.controller.Result;
@@ -68,9 +71,9 @@ public class TestController {
 	}
 
 	@PostMapping
-	@EnableFenglinable(beans = { @Bean(clsName = Test.class, ignoreRequire = {}) })
+	@EnableFenglinable
 	@ApiOperation("save")
-	public Object save(Test test) {
+	public Object save(@Bean(groups= {Save.class}) Test test) {
 		Optional<Test> testOptional = testService.saveTest(test);
 		if (testOptional.isPresent()) {
 			return new Result<Test>().setSuccess(true).setCode(ResponseMessage.OK.getCode())
@@ -82,9 +85,9 @@ public class TestController {
 	}
 
 	@PutMapping("/{id}")
-	@EnableFenglinable(beans = { @Bean(clsName = Test.class, ignoreRequire = { "name" }) })
+	@EnableFenglinable
 	@ApiOperation("modify")
-	public Object modify(Test test) {
+	public Object modify(@Bean(groups= {ModifiedNull.class,ModifiedNotNull.class}) Test test) {
 		int count = testService.modifyTest(test);
 		if (count > 0) {
 			return new Result<Integer>().setSuccess(true).setCode(ResponseMessage.OK.getCode()).setData(count);

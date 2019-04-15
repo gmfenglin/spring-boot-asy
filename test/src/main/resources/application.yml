@@ -25,9 +25,9 @@ spring:
     connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
 mybatis:
   # 指定全局配置文件位置
-  config-location: classpath:mybatis/mybatis-config.xml
+  config-location: file:///${user.dir}/src/main/resources/mybatis/mybatis-config.xml
   # 指定sql映射文件位置
-  mapper-locations: classpath:mybatis/mapper/*.xml
+  mapper-locations: file:///${user.dir}/src/main/resources/mybatis/mapper/*.xml
 thread-pool: 
   core-pool-size: 5
   max-pool-size: 5
