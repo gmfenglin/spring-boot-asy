@@ -10,11 +10,6 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel("Test")
 public class Test extends AbstractModel implements Serializable {
 
-	@Override
-	public String toString() {
-		return "Test [name=" + name + ", toString()=" + super.toString() + "]";
-	}
-
 	// 姓名
 	@NotBlank
 	@ApiModelProperty(value = "name")
@@ -27,4 +22,10 @@ public class Test extends AbstractModel implements Serializable {
 	public void setName(String name) {
 		this.name = name;
 	}
+
+	@Override
+	public String toString() {
+		return "Test [name=" + name + ", toString()=" + super.toString() + "]";
+	}
+
 }

@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -31,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.validation.FieldError;
@@ -39,8 +37,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import com.feng.lin.web.lib.controller.annotation.Bean;
-import com.feng.lin.web.lib.controller.annotation.Beans;
-import com.feng.lin.web.lib.controller.annotation.EnAsyable;
+import com.feng.lin.web.lib.controller.annotation.EnFenglinable;
 
 @Aspect
 @Configuration
@@ -80,8 +77,8 @@ public class AsyControllerAspect {
 		return (validatedAnn != null ? validatedAnn.value() : new Class<?>[0]);
 	}
 
-	@Around("@annotation(enAsyable)")
-	public Object handleControllerOfMethod(ProceedingJoinPoint pjp, EnAsyable enAsyable) throws Throwable {
+	@Around("@annotation(fenglinable)")
+	public Object handleControllerOfMethod(ProceedingJoinPoint pjp, EnFenglinable fenglinable) throws Throwable {
 		Object o = pjp.getThis();
 		// 1. 参数解析
 		Object[] args = pjp.getArgs();
@@ -94,98 +91,98 @@ public class AsyControllerAspect {
 						return parameterNames[i] + ":" + args[i];
 					}).collect(Collectors.joining(","));
 		});
-		// 2.基本类型参数验证
-		ExecutableValidator execVal = validator.forExecutables();
-		Class<?>[] argTypes = new Class[args.length];
-		for (int i = 0; i < args.length; i++) {
-			argTypes[i] = args[i].getClass();
-		}
-		Method method = pjp.getTarget().getClass().getMethod(pjp.getSignature().getName(), argTypes);
-		ControllerMethodArgumentNotValidException argumentNotValidException = new ControllerMethodArgumentNotValidException();
-		Set<ConstraintViolation<Object>> result = execVal.validateParameters(pjp.getThis(), method, pjp.getArgs(),
-				determineValidationGroups(pjp, method));
-		if (!result.isEmpty()) {
-			for (ConstraintViolation<Object> item : result) {
+		if (fenglinable.valid()) {
+			// 2.基本类型参数验证
+			ExecutableValidator execVal = validator.forExecutables();
 
-				FieldError fieldError = new FieldError(pjp.getThis().getClass().getSimpleName(),
-						item.getPropertyPath().toString(), item.getMessage());
-				argumentNotValidException.getFieldErrors().add(fieldError);
-			}
-			debugLog(() -> {
-				return method.getName() + "--"
-						+ argumentNotValidException.getFieldErrors().stream().map((filedError) -> {
-							return filedError.getObjectName() + "对象的" + filedError.getField() + "字段："
-									+ filedError.getDefaultMessage();
-						}).reduce("", String::concat);
-			});
-			throw argumentNotValidException;
-		}
-		// 3.对象参数验证
-		Map<String, String[]> filedMap = new HashMap<>();
-		if (method.isAnnotationPresent(Beans.class)) {
-			Beans beans = method.getAnnotation(Beans.class);
-			Bean[] beanArray = beans.beans();
-			for(Bean bean:beanArray) {
-				filedMap.put(bean.clsName().getName(), bean.ignoreRequire());
-			}
-		}
-		for (int i = 0; i < args.length; i++) {
-			Object arg = args[i];
-			String clsName = arg.getClass().getName();
-			if (!filedMap.containsKey(clsName)) {
-				continue;
-			}
-			Set<ConstraintViolation<Object>> validateSet = validator.validate(arg);
+			Method method = methodSignature.getMethod();
+			ControllerMethodArgumentNotValidException argumentNotValidException = new ControllerMethodArgumentNotValidException();
+			Set<ConstraintViolation<Object>> result = execVal.validateParameters(pjp.getThis(), method, pjp.getArgs(),
+					determineValidationGroups(pjp, method));
+			if (!result.isEmpty()) {
+				for (ConstraintViolation<Object> item : result) {
 
-			String[] filedList = filedMap.get(clsName);
-			for (ConstraintViolation<Object> item : validateSet) {
-				boolean flag = false;
-				for (String filed : filedList) {
-					if (filed.equals(item.getPropertyPath().toString())) {
-						Annotation annotation = item.getConstraintDescriptor().getAnnotation();
-						// 4.允许为空
-						if (annotation.annotationType().equals(NotNull.class)
-								|| annotation.annotationType().equals(NotBlank.class)) {
-							flag = true;
-							break;
-						}
-					}
-				}
-				if (!flag) {
-					FieldError fieldError = new FieldError(parameterNames[i], item.getPropertyPath().toString(),
-							item.getMessage());
+					FieldError fieldError = new FieldError(pjp.getThis().getClass().getSimpleName(),
+							item.getPropertyPath().toString(), item.getMessage());
 					argumentNotValidException.getFieldErrors().add(fieldError);
 				}
+				debugLog(() -> {
+					return method.getName() + "--"
+							+ argumentNotValidException.getFieldErrors().stream().map((filedError) -> {
+								return filedError.getObjectName() + "对象的" + filedError.getField() + "字段："
+										+ filedError.getDefaultMessage();
+							}).reduce("", String::concat);
+				});
+				throw argumentNotValidException;
 			}
-
-		}
-		if (argumentNotValidException.getFieldErrors().size() > 0) {
-			debugLog(() -> {
-				return method.getName() + "--"
-						+ argumentNotValidException.getFieldErrors().stream().map((filedError) -> {
-							return filedError.getObjectName() + "对象的" + filedError.getField() + "字段："
-									+ filedError.getDefaultMessage();
-						}).reduce("", String::concat);
-			});
-			throw argumentNotValidException;
-		}
-
-		return asyncWrap((DeferredResult<Object> deferredResult) -> {
-			long startTime = new Date().getTime();
-			debugLog(() -> {
-				return Thread.currentThread().getName()+" thread start:" + new Date().getTime();
-			});
-			try {
-				deferredResult.setResult(pjp.proceed());
-			} catch (Throwable e) {
-				e.printStackTrace();
-				deferredResult.setErrorResult(e);
+			// 3.对象参数验证
+			Map<String, String[]> filedMap = new HashMap<>();
+			Bean[] beanArray = fenglinable.beans();
+			for (Bean bean : beanArray) {
+				filedMap.put(bean.clsName().getName(), bean.ignoreRequire());
 			}
-			debugLog(() -> {
-				long now = new Date().getTime();
-				return Thread.currentThread().getName()+" thread end:" + now + ",耗时：" + (now - startTime);
+			for (int i = 0; i < args.length; i++) {
+				Object arg = args[i];
+				String clsName = arg.getClass().getName();
+				if (!filedMap.containsKey(clsName)) {
+					continue;
+				}
+				Set<ConstraintViolation<Object>> validateSet = validator.validate(arg);
+
+				String[] filedList = filedMap.get(clsName);
+				for (ConstraintViolation<Object> item : validateSet) {
+					boolean flag = false;
+					for (String filed : filedList) {
+						if (filed.equals(item.getPropertyPath().toString())) {
+							Annotation annotation = item.getConstraintDescriptor().getAnnotation();
+							// 4.允许为空
+							if (annotation.annotationType().equals(NotNull.class)
+									|| annotation.annotationType().equals(NotBlank.class)) {
+								flag = true;
+								break;
+							}
+						}
+					}
+					if (!flag) {
+						FieldError fieldError = new FieldError(parameterNames[i], item.getPropertyPath().toString(),
+								item.getMessage());
+						argumentNotValidException.getFieldErrors().add(fieldError);
+					}
+				}
+
+			}
+			if (argumentNotValidException.getFieldErrors().size() > 0) {
+				debugLog(() -> {
+					return method.getName() + "--"
+							+ argumentNotValidException.getFieldErrors().stream().map((filedError) -> {
+								return filedError.getObjectName() + "对象的" + filedError.getField() + "字段："
+										+ filedError.getDefaultMessage();
+							}).reduce("", String::concat);
+				});
+				throw argumentNotValidException;
+			}
+		}
+		if (fenglinable.asy()) {
+			return asyncWrap((DeferredResult<Object> deferredResult) -> {
+				long startTime = new Date().getTime();
+				debugLog(() -> {
+					return Thread.currentThread().getName() + " thread start:" + new Date().getTime();
+				});
+				try {
+					deferredResult.setResult(pjp.proceed());
+				} catch (Throwable e) {
+					e.printStackTrace();
+					deferredResult.setErrorResult(e);
+				}
+				debugLog(() -> {
+					long now = new Date().getTime();
+					return Thread.currentThread().getName() + " thread end:" + now + ",耗时：" + (now - startTime);
+				});
 			});
-		});
+		} else {
+			return pjp.proceed();
+		}
+
 	}
 
 }

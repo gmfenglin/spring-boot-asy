@@ -9,9 +9,11 @@ import org.springframework.context.annotation.Import;
 
 import com.feng.lin.web.lib.aop.AsyControllerAspect;
 
-@Target({ElementType.METHOD,ElementType.TYPE})
+@Target({ ElementType.METHOD, ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-@Import({   AsyControllerAspect.class })
-public @interface EnAsyable {
-
+@Import({ AsyControllerAspect.class })
+public @interface EnFenglinable {
+	boolean valid() default true;
+	boolean asy() default true;
+	public Bean[] beans() default {};
 }

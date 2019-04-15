@@ -22,8 +22,7 @@ import com.feng.lin.test.demo.service.TestService;
 import com.feng.lin.web.lib.controller.ResponseMessage;
 import com.feng.lin.web.lib.controller.Result;
 import com.feng.lin.web.lib.controller.annotation.Bean;
-import com.feng.lin.web.lib.controller.annotation.Beans;
-import com.feng.lin.web.lib.controller.annotation.EnAsyable;
+import com.feng.lin.web.lib.controller.annotation.EnFenglinable;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -36,7 +35,7 @@ public class TestController {
 	private TestService testService;
 
 	@GetMapping("/{id}")
-	@EnAsyable
+	@EnFenglinable
 	@ApiOperation("getById")
 	public Object getById(@PathVariable @Min(1) Integer id) {
 		Optional<Test> test = testService.getTestById(id);
@@ -50,7 +49,7 @@ public class TestController {
 	}
 
 	@GetMapping
-	@EnAsyable
+	@EnFenglinable
 	@ApiOperation("getByCondition")
 	public Object getByCondition(TestCondition condition, Pager pager) {
 		int count = testService.count(condition);
@@ -69,8 +68,7 @@ public class TestController {
 	}
 
 	@PostMapping
-	@Beans(beans = { @Bean(clsName = Test.class, ignoreRequire = {}) })
-	@EnAsyable
+	@EnFenglinable(beans = { @Bean(clsName = Test.class, ignoreRequire = {}) })
 	@ApiOperation("save")
 	public Object save(Test test) {
 		Optional<Test> testOptional = testService.saveTest(test);
@@ -84,8 +82,7 @@ public class TestController {
 	}
 
 	@PutMapping("/{id}")
-	@Beans(beans = { @Bean(clsName = Test.class, ignoreRequire = {"name"}) })
-	@EnAsyable
+	@EnFenglinable(beans = { @Bean(clsName = Test.class, ignoreRequire = { "name" }) })
 	@ApiOperation("modify")
 	public Object modify(Test test) {
 		int count = testService.modifyTest(test);
