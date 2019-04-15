@@ -2,6 +2,7 @@ package com.feng.lin.web.lib.aop;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Date;
@@ -152,8 +153,31 @@ public class AsyControllerAspect {
 				Class<?>[] groups = filedMap.get(arg.getClass().getName());
 				Field[] fields = arg.getClass().getDeclaredFields();
 				for (Field field : fields) {
-					List<FieldError> fieldErrors=new ArrayList<>();
+					List<FieldError> fieldErrors = new ArrayList<>();
 					for (Class<?> group : groups) {
+						Annotation[] annotations = field.getAnnotations();
+						boolean flag = false;
+						for (Annotation annotation : annotations) {
+							Method[] methods = annotation.annotationType().getDeclaredMethods();
+							for (Method methoda : methods) {
+								if (methoda.getName().equals("groups")) {
+
+									try {
+										if (isIn((Object[]) methoda.invoke(annotation, new String[] {}), group)) {
+											flag = true;
+											break;
+										}
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+								}
+
+							}
+
+						}
+						if (!flag) {
+							continue;
+						}
 						Set<ConstraintViolation<Object>> set = validator.validateProperty(arg, field.getName(), group);
 						for (ConstraintViolation<Object> item : set) {
 							FieldError fieldError = new FieldError(parameterNames[indexOf(args, arg)],
@@ -165,13 +189,13 @@ public class AsyControllerAspect {
 							break;
 						}
 					}
-					if(fieldErrors.size()>0) {
-						for(FieldError fieldError:fieldErrors) {
+					if (fieldErrors.size() > 0) {
+						for (FieldError fieldError : fieldErrors) {
 							argumentNotValidException.getFieldErrors().add(fieldError);
 						}
 						break;
 					}
-					
+
 				}
 
 			});

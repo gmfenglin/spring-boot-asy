@@ -23,15 +23,12 @@ public class Test extends AbstractModel implements Serializable {
 	}
 
 	// 姓名
-	@NotBlank(groups = Save.class)
-	@NotBlank(groups = ModifiedNotNull.class)
+	@NotBlank(groups = {Save.class,ModifiedNotNull.class} )
 	@Null(groups = ModifiedNull.class)
 	@ApiModelProperty(value = "name")
 	private String name;
 	// 姓名
-	@NotBlank(groups = Save.class)
-	@NotBlank(groups = ModifiedNotNull.class)
-	@Null(groups = ModifiedNull.class)
+	@NotBlank(groups = {Save.class,ModifiedNotNull.class} )
 	@ApiModelProperty(value = "tname")
 	private String tname;
 
