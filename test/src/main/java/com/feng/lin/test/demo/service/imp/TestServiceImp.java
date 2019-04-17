@@ -101,14 +101,36 @@ public class TestServiceImp implements TestService {
 		}
 		return Optional.empty();
 	}
-
+	@Transactional
 	public int modifyTest(Test model) {
+		boolean flag = false;
 		try {
 			int count = testMapper.modifyTest(model);
 			return count;
 		} catch (Exception e) {
 			logger.error("modifyTest", e);
 			return -1;
+		}finally {
+			// 告诉忽略超时
+			if(!flag) {
+				synchronized (this) {
+					if( !TaskHolder.local.get().isTimeout()) {
+						debugLog(() -> {
+							return "set no timeOut";
+						});
+						TaskHolder.request.get().getAsyncContext().setTimeout(-1);
+					}
+				}
+				
+			}
+			// 检查超时标志,如果超时，回滚事务
+			if (flag || TaskHolder.local.get().isTimeout()) {
+				debugLog(() -> {
+					return "rollbackOnly";
+				});
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			}
+
 		}
 	}
 

@@ -21,7 +21,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @Configuration
-@Import({ TimeInterceptor.class, ThreadPoolConfig.class, AsyControllerAspect.class })
+@Import({ ThreadPoolConfig.class, AsyControllerAspect.class })
 @EnableSwagger2
 public class WebConfig extends WebMvcConfigurationSupport {
 	@Value("${controller-package-path}")
@@ -39,8 +39,6 @@ public class WebConfig extends WebMvcConfigurationSupport {
 	}
 
 	@Autowired
-	private TimeInterceptor timeInterceptor;
-	@Autowired
 	private AsyncTaskExecutor asyncTaskExecutor;
 
 	@Override
@@ -52,7 +50,6 @@ public class WebConfig extends WebMvcConfigurationSupport {
 
 	@Override
 	protected void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-		configurer.registerDeferredResultInterceptors(timeInterceptor);
 		configurer.setTaskExecutor(asyncTaskExecutor);
 		super.configureAsyncSupport(configurer);
 	}

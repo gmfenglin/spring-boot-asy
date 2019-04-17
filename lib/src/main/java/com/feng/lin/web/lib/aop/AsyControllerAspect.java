@@ -75,7 +75,6 @@ public class AsyControllerAspect {
 		private DeferredResultMonitor monitor;
 		private HttpServletRequest request;
 
-
 		public void setRequestLocal(ThreadLocal<HttpServletRequest> requestLocal) {
 			this.requestLocal = requestLocal;
 		}
@@ -120,6 +119,10 @@ public class AsyControllerAspect {
 	}
 
 	protected final DeferredResult<Object> asyncWrap(Supplier<Object> supplier) {
+		long startTime = new Date().getTime();
+		debugLog(() -> {
+			return Thread.currentThread().getName() + " asyncWrap thread start:" + startTime;
+		});
 		DeferredResult<Object> deferredResult = new DeferredResult<>(timeout);
 		DeferredResultMonitor monitor = new DeferredResultMonitor();
 		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
@@ -159,6 +162,10 @@ public class AsyControllerAspect {
 					return "任务已经完成";
 				});
 			}
+		});
+		debugLog(() -> {
+			long now = new Date().getTime();
+			return Thread.currentThread().getName() + " asyncWrap thread end:" + now + ",耗时：" + (now - startTime);
 		});
 		return deferredResult;
 	}
@@ -309,7 +316,7 @@ public class AsyControllerAspect {
 			return asyncWrap(() -> {
 				long startTime = new Date().getTime();
 				debugLog(() -> {
-					return Thread.currentThread().getName() + " thread start:" + new Date().getTime();
+					return Thread.currentThread().getName() + " thread start:" + startTime;
 				});
 				Object result = null;
 				try {
@@ -326,7 +333,23 @@ public class AsyControllerAspect {
 				return result;
 			});
 		} else {
-			return pjp.proceed();
+			long startTime = new Date().getTime();
+			debugLog(() -> {
+				return Thread.currentThread().getName() + " no asyncWrap thread start:" + startTime;
+			});
+			Object result = null;
+			try {
+				result = pjp.proceed();
+			} catch (Throwable e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				debugLog(() -> {
+					long now = new Date().getTime();
+					return Thread.currentThread().getName() + " no asyncWrap thread end:" + now + ",耗时：" + (now - startTime);
+				});
+			}
+			return result;
 		}
 
 	}
