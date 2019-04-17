@@ -2,7 +2,6 @@ package com.feng.lin.web.lib.aop;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -41,6 +39,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import com.feng.lin.web.lib.controller.annotation.Bean;
 import com.feng.lin.web.lib.controller.annotation.EnableFenglinable;
+import com.feng.lin.web.lib.message.DeferredResultMonitor;
 
 @Aspect
 @Configuration
@@ -60,11 +59,86 @@ public class AsyControllerAspect {
 		}
 	}
 
-	protected final <T> DeferredResult<T> asyncWrap(Consumer<DeferredResult<T>> consumer) {
-		DeferredResult<T> deferredResult = new DeferredResult<>(timeout);
-		CompletableFuture.runAsync(() -> {
-			consumer.accept(deferredResult);
-		}, asyncTaskExecutor);
+	public static final class TaskHolder {
+		public static ThreadLocal<DeferredResultMonitor> local = new ThreadLocal<DeferredResultMonitor>();
+	}
+
+	protected class TaskRunnable implements Runnable {
+		private Supplier<Object> supplier;
+		private ThreadLocal<DeferredResultMonitor> local;
+		private DeferredResultMonitor monitor;
+
+		public void setLocal(ThreadLocal<DeferredResultMonitor> local) {
+			this.local = local;
+		}
+
+		private DeferredResult<Object> deferredResult;
+
+		public DeferredResult<Object> getDeferredResult() {
+			return deferredResult;
+		}
+
+		public void setDeferredResult(DeferredResult<Object> deferredResult) {
+			this.deferredResult = deferredResult;
+		}
+
+		public void setSupplier(Supplier<Object> supplier) {
+			this.supplier = supplier;
+		}
+
+		public DeferredResultMonitor getLocal() {
+			return local.get();
+		}
+
+		public void setLocal(DeferredResultMonitor monitor) {
+			this.monitor = monitor;
+		}
+
+		@Override
+		public void run() {
+			this.local.set(monitor);
+			deferredResult.setResult(supplier.get());
+		}
+
+	}
+
+	protected final DeferredResult<Object> asyncWrap(Supplier<Object> supplier) {
+		DeferredResult<Object> deferredResult = new DeferredResult<>(timeout);
+		DeferredResultMonitor monitor = new DeferredResultMonitor();
+		TaskRunnable taskRunnable = new TaskRunnable();
+		taskRunnable.setLocal(TaskHolder.local);
+		taskRunnable.setDeferredResult(deferredResult);
+		taskRunnable.setSupplier(supplier);
+		taskRunnable.setLocal(monitor);
+		CompletableFuture<Void> future = CompletableFuture.runAsync(taskRunnable, asyncTaskExecutor);
+		deferredResult.onTimeout(() -> {
+			// 取消任务，可中断
+			debugLog(() -> {
+				return "取消任务，可中断";
+			});
+			if (future.cancel(true)) {
+				if (future.isCancelled()) {
+					if (future.isDone()) {
+						monitor.setTimeout(true);
+						// 中断任务
+						debugLog(() -> {
+							return "中断任务";
+						});
+					}
+
+				} else {
+					// 任务还没开始
+					debugLog(() -> {
+						return "任务还没开始";
+					});
+				}
+			} else {
+				// 任务已经完成
+				debugLog(() -> {
+					return "任务已经完成";
+				});
+			}
+		});
 		return deferredResult;
 	}
 
@@ -211,21 +285,24 @@ public class AsyControllerAspect {
 			}
 		}
 		if (fenglinable.asy()) {
-			return asyncWrap((DeferredResult<Object> deferredResult) -> {
+			return asyncWrap(() -> {
 				long startTime = new Date().getTime();
 				debugLog(() -> {
 					return Thread.currentThread().getName() + " thread start:" + new Date().getTime();
 				});
+				Object result = null;
 				try {
-					deferredResult.setResult(pjp.proceed());
+					result = pjp.proceed();
 				} catch (Throwable e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
-					deferredResult.setErrorResult(e);
+				} finally {
+					debugLog(() -> {
+						long now = new Date().getTime();
+						return Thread.currentThread().getName() + " thread end:" + now + ",耗时：" + (now - startTime);
+					});
 				}
-				debugLog(() -> {
-					long now = new Date().getTime();
-					return Thread.currentThread().getName() + " thread end:" + now + ",耗时：" + (now - startTime);
-				});
+				return result;
 			});
 		} else {
 			return pjp.proceed();

@@ -33,5 +33,5 @@ thread-pool:
   max-pool-size: 5
   queue-capacity: 99999
   thread-name-prefix: async-service-
-  timeout: 5000
+  timeout: 5
 controller-package-path: com.feng.lin.test.demo.web.controller

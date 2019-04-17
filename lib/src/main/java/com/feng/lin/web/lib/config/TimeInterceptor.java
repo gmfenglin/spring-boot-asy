@@ -4,7 +4,6 @@ import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.RequestAttributes;
@@ -41,7 +40,8 @@ public class TimeInterceptor implements DeferredResultProcessingInterceptor {
 			logger.debug("handleTimeout:" + startTime);
 
 		}
-		return true;
+		
+		return !deferredResult.hasResult();
 	}
 
 	@Override
