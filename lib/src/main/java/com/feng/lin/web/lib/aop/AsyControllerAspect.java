@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -35,6 +36,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import com.feng.lin.web.lib.controller.annotation.Bean;
@@ -61,12 +64,25 @@ public class AsyControllerAspect {
 
 	public static final class TaskHolder {
 		public static ThreadLocal<DeferredResultMonitor> local = new ThreadLocal<DeferredResultMonitor>();
+		public static ThreadLocal<HttpServletRequest> request = new ThreadLocal<HttpServletRequest>();
+
 	}
 
 	protected class TaskRunnable implements Runnable {
 		private Supplier<Object> supplier;
 		private ThreadLocal<DeferredResultMonitor> local;
+		private ThreadLocal<HttpServletRequest> requestLocal;
 		private DeferredResultMonitor monitor;
+		private HttpServletRequest request;
+
+
+		public void setRequestLocal(ThreadLocal<HttpServletRequest> requestLocal) {
+			this.requestLocal = requestLocal;
+		}
+
+		public void setRequest(HttpServletRequest request) {
+			this.request = request;
+		}
 
 		public void setLocal(ThreadLocal<DeferredResultMonitor> local) {
 			this.local = local;
@@ -97,6 +113,7 @@ public class AsyControllerAspect {
 		@Override
 		public void run() {
 			this.local.set(monitor);
+			this.requestLocal.set(request);
 			deferredResult.setResult(supplier.get());
 		}
 
@@ -105,7 +122,11 @@ public class AsyControllerAspect {
 	protected final DeferredResult<Object> asyncWrap(Supplier<Object> supplier) {
 		DeferredResult<Object> deferredResult = new DeferredResult<>(timeout);
 		DeferredResultMonitor monitor = new DeferredResultMonitor();
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
+				.getRequest();
 		TaskRunnable taskRunnable = new TaskRunnable();
+		taskRunnable.setRequestLocal(TaskHolder.request);
+		taskRunnable.setRequest(request);
 		taskRunnable.setLocal(TaskHolder.local);
 		taskRunnable.setDeferredResult(deferredResult);
 		taskRunnable.setSupplier(supplier);
