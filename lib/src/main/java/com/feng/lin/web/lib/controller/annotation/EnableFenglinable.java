@@ -15,4 +15,5 @@ import com.feng.lin.web.lib.aop.AsyControllerAspect;
 public @interface EnableFenglinable {
 	boolean valid() default true;
 	boolean asy() default true;
+	boolean setResult() default true;
 }

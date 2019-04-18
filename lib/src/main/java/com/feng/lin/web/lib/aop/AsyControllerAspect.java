@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,15 +67,28 @@ public class AsyControllerAspect {
 	public static final class TaskHolder {
 		public static ThreadLocal<DeferredResultMonitor> local = new ThreadLocal<DeferredResultMonitor>();
 		public static ThreadLocal<HttpServletRequest> request = new ThreadLocal<HttpServletRequest>();
+		public static ThreadLocal<DeferredResult<Object>> deferredResult = new ThreadLocal<DeferredResult<Object>>();
+		public static final Map<String, DeferredResult<Object>> messageMap = new ConcurrentHashMap<>();
 
 	}
 
 	protected class TaskRunnable implements Runnable {
-		private Supplier<Object> supplier;
+		private Function<DeferredResult<Object>, Object> fun;
+
+		public void setFun(Function<DeferredResult<Object>, Object> fun) {
+			this.fun = fun;
+		}
+
 		private ThreadLocal<DeferredResultMonitor> local;
 		private ThreadLocal<HttpServletRequest> requestLocal;
 		private DeferredResultMonitor monitor;
 		private HttpServletRequest request;
+		private ThreadLocal<DeferredResult<Object>> deferredResultLocal;
+		private DeferredResult<Object> deferredResult;
+
+		public void setDeferredResultLocal(ThreadLocal<DeferredResult<Object>> deferredResultLocal) {
+			this.deferredResultLocal = deferredResultLocal;
+		}
 
 		public void setRequestLocal(ThreadLocal<HttpServletRequest> requestLocal) {
 			this.requestLocal = requestLocal;
@@ -87,18 +102,12 @@ public class AsyControllerAspect {
 			this.local = local;
 		}
 
-		private DeferredResult<Object> deferredResult;
-
 		public DeferredResult<Object> getDeferredResult() {
 			return deferredResult;
 		}
 
 		public void setDeferredResult(DeferredResult<Object> deferredResult) {
 			this.deferredResult = deferredResult;
-		}
-
-		public void setSupplier(Supplier<Object> supplier) {
-			this.supplier = supplier;
 		}
 
 		public DeferredResultMonitor getLocal() {
@@ -113,12 +122,13 @@ public class AsyControllerAspect {
 		public void run() {
 			this.local.set(monitor);
 			this.requestLocal.set(request);
-			deferredResult.setResult(supplier.get());
+			this.deferredResultLocal.set(deferredResult);
+			this.fun.apply(deferredResult);
 		}
 
 	}
 
-	protected final DeferredResult<Object> asyncWrap(Supplier<Object> supplier) {
+	protected final DeferredResult<Object> asyncWrap(Function<DeferredResult<Object>, Object> fun) {
 		long startTime = new Date().getTime();
 		debugLog(() -> {
 			return Thread.currentThread().getName() + " asyncWrap thread start:" + startTime;
@@ -130,10 +140,15 @@ public class AsyControllerAspect {
 		TaskRunnable taskRunnable = new TaskRunnable();
 		taskRunnable.setRequestLocal(TaskHolder.request);
 		taskRunnable.setRequest(request);
+
 		taskRunnable.setLocal(TaskHolder.local);
-		taskRunnable.setDeferredResult(deferredResult);
-		taskRunnable.setSupplier(supplier);
 		taskRunnable.setLocal(monitor);
+
+		taskRunnable.setDeferredResultLocal(TaskHolder.deferredResult);
+		taskRunnable.setDeferredResult(deferredResult);
+
+		taskRunnable.setFun(fun);
+
 		CompletableFuture<Void> future = CompletableFuture.runAsync(taskRunnable, asyncTaskExecutor);
 		deferredResult.onTimeout(() -> {
 			// 取消任务，可中断
@@ -313,7 +328,7 @@ public class AsyControllerAspect {
 			}
 		}
 		if (fenglinable.asy()) {
-			return asyncWrap(() -> {
+			return asyncWrap((in) -> {
 				long startTime = new Date().getTime();
 				debugLog(() -> {
 					return Thread.currentThread().getName() + " thread start:" + startTime;
@@ -321,6 +336,10 @@ public class AsyControllerAspect {
 				Object result = null;
 				try {
 					result = pjp.proceed();
+					if (fenglinable.setResult()) {
+						in.setResult(result);
+					}
+
 				} catch (Throwable e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -346,7 +365,8 @@ public class AsyControllerAspect {
 			} finally {
 				debugLog(() -> {
 					long now = new Date().getTime();
-					return Thread.currentThread().getName() + " no asyncWrap thread end:" + now + ",耗时：" + (now - startTime);
+					return Thread.currentThread().getName() + " no asyncWrap thread end:" + now + ",耗时："
+							+ (now - startTime);
 				});
 			}
 			return result;

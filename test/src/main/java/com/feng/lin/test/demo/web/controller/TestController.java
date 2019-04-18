@@ -4,17 +4,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.validation.constraints.Min;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import com.feng.lin.test.demo.dao.dto.query.Pager;
 import com.feng.lin.test.demo.dao.dto.query.TestCondition;
@@ -23,6 +25,7 @@ import com.feng.lin.test.demo.dao.model.Test.ModifiedNotNull;
 import com.feng.lin.test.demo.dao.model.Test.ModifiedNull;
 import com.feng.lin.test.demo.dao.model.Test.Save;
 import com.feng.lin.test.demo.service.TestService;
+import com.feng.lin.web.lib.aop.AsyControllerAspect.TaskHolder;
 import com.feng.lin.web.lib.controller.ResponseMessage;
 import com.feng.lin.web.lib.controller.Result;
 import com.feng.lin.web.lib.controller.annotation.Bean;
@@ -37,7 +40,20 @@ import io.swagger.annotations.ApiOperation;
 public class TestController {
 	@Autowired
 	private TestService testService;
+
+	@Autowired
+	private StringRedisTemplate template;
 	
+
+	@GetMapping("/message/{id}")
+	@EnableFenglinable(setResult = false)
+	@ApiOperation("message")
+	public Object message(@PathVariable @Min(1) Integer id) {
+		String messageId=Thread.currentThread().getId()+"-"+System.currentTimeMillis();
+		TaskHolder.messageMap.put(messageId, TaskHolder.deferredResult.get());
+		template.convertAndSend("mytopic", messageId+":"+id);
+		return TaskHolder.deferredResult.get();
+	}
 
 	@GetMapping("/{id}")
 	@EnableFenglinable
@@ -75,7 +91,7 @@ public class TestController {
 	@PostMapping
 	@EnableFenglinable
 	@ApiOperation("save")
-	public Object save(@Bean(groups= {Save.class}) Test test) {
+	public Object save(@Bean(groups = { Save.class }) Test test) {
 		Optional<Test> testOptional = testService.saveTest(test);
 		if (testOptional.isPresent()) {
 			return new Result<Test>().setSuccess(true).setCode(ResponseMessage.OK.getCode())
@@ -89,7 +105,7 @@ public class TestController {
 	@PutMapping("/{id}")
 	@EnableFenglinable
 	@ApiOperation("modify")
-	public Object modify(@Bean(groups= {ModifiedNull.class,ModifiedNotNull.class}) Test test) {
+	public Object modify(@Bean(groups = { ModifiedNull.class, ModifiedNotNull.class }) Test test) {
 		int count = testService.modifyTest(test);
 		if (count > 0) {
 			return new Result<Integer>().setSuccess(true).setCode(ResponseMessage.OK.getCode()).setData(count);
