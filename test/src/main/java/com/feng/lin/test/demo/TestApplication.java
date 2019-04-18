@@ -34,12 +34,11 @@ public class TestApplication {
 	}
 
 	@Bean
-	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
-			MessageListenerAdapter listenerAdapter) {
+	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory) {
 
 		RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(connectionFactory);
-		container.addMessageListener(listenerAdapter, new PatternTopic("mytopic"));
+		container.addMessageListener(listenerAdapter(), new PatternTopic("mytopic"));
 
 		return container;
 	}

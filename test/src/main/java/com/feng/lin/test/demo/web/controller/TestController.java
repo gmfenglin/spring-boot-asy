@@ -4,10 +4,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import javax.validation.constraints.Min;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.async.DeferredResult;
 
 import com.feng.lin.test.demo.dao.dto.query.Pager;
 import com.feng.lin.test.demo.dao.dto.query.TestCondition;
@@ -38,20 +39,26 @@ import io.swagger.annotations.ApiOperation;
 @Api("/test")
 @RestController
 public class TestController {
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	@Autowired
 	private TestService testService;
 
 	@Autowired
 	private StringRedisTemplate template;
-	
+	protected void debugLog(Supplier<String> supplier) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(supplier.get());
+		}
+	}
 
 	@GetMapping("/message/{id}")
 	@EnableFenglinable(setResult = false)
 	@ApiOperation("message")
 	public Object message(@PathVariable @Min(1) Integer id) {
-		String messageId=Thread.currentThread().getId()+"-"+System.currentTimeMillis();
+		String messageId = Thread.currentThread().getId() + "-" + System.currentTimeMillis();
 		TaskHolder.messageMap.put(messageId, TaskHolder.deferredResult.get());
-		template.convertAndSend("mytopic", messageId+":"+id);
+		template.convertAndSend("mytopic", messageId + ":" + id);
+		debugLog(()->"send message.");
 		return TaskHolder.deferredResult.get();
 	}
 
