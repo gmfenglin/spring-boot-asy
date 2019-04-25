@@ -1,10 +1,20 @@
 package com.feng.lin.web.lib.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
+
 public class Result <T>{
+	public interface ResultView{
+		
+	}
+	@JsonView(ResultView.class)
 	private int code;
+	@JsonView(ResultView.class)
 	private T data;
+	@JsonView(ResultView.class)
 	private String message;
+	@JsonView(ResultView.class)
 	private boolean success;
+	
 	public int getCode() {
 		return code;
 	}

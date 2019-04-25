@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.web.filter.FormContentFilter;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
@@ -37,7 +38,10 @@ public class WebConfig extends WebMvcConfigurationSupport {
 		return new ApiInfoBuilder().title("Swagger2构建RESTful APIs").description("").termsOfServiceUrl("").version("1.0")
 				.build();
 	}
-
+	@Bean
+    public FormContentFilter formContentFilter() {
+        return new FormContentFilter();
+    }
 	@Autowired
 	private AsyncTaskExecutor asyncTaskExecutor;
 
