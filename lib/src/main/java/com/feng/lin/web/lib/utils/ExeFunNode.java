@@ -1,74 +1,83 @@
 package com.feng.lin.web.lib.utils;
 
-public class ExeFunNode {
-	private ExeFunNode parent;
-	private ExeFun node;
-	private ExeFunNode nextCondition;
-	private ExeFunNode nextTrue;
-	private ExeFunNode nextFalse;
-	private ExeFunNode nextOr;
-	private ExeFunNode nextDo;
+public class ExeFunNode<T, R> {
+	private ExeFunNode<T, R> parent;
+	private ExeFun<T, R> node;
+	private ExeFunNode<T, R> nextCondition;
+	private ExeFunNode<T, R> nextThen;
+	private ExeFunNode<T, R> nextTrue;
+	private ExeFunNode<T, R> nextFalse;
+	private ExeFunNode<T, R> nextOr;
+	private ExeFunNode<T, R> nextDo;
 
+	public ExeFunNode<T, R> getNextThen() {
+		return nextThen;
+	}
 
-	public void setParent(ExeFunNode parent) {
+	public void setNextThen(ExeFunNode<T, R> nextThen) {
+		this.nextThen = nextThen;
+		this.nextThen.setParent(this);
+	}
+
+	public void setParent(ExeFunNode<T, R> parent) {
 		this.parent = parent;
 	}
 
-	public ExeFunNode getParent() {
+	public ExeFunNode<T, R> getParent() {
 		return parent;
 	}
 
-	public ExeFunNode getNextCondition() {
+	public ExeFunNode<T, R> getNextCondition() {
 		return nextCondition;
 	}
 
-	public ExeFunNode getNextTrue() {
+	public ExeFunNode<T, R> getNextTrue() {
 		return nextTrue;
 	}
 
-	public ExeFunNode getNextFalse() {
+	public ExeFunNode<T, R> getNextFalse() {
 		return nextFalse;
 	}
 
-	public ExeFunNode getNextOr() {
+	public ExeFunNode<T, R> getNextOr() {
 		return nextOr;
 	}
 
-	public ExeFunNode getNextDo() {
+	public ExeFunNode<T, R> getNextDo() {
 		return nextDo;
 	}
 
-	public ExeFun getNode() {
+	public ExeFun<T, R> getNode() {
 		return node;
 	}
 
-	public void setNextCondition(ExeFunNode nextCondition) {
-		
+	public void setNextCondition(ExeFunNode<T, R> nextCondition) {
+
 		this.nextCondition = nextCondition;
 		this.nextCondition.setParent(this);
 	}
 
-	public void setNextTrue(ExeFunNode nextTrue) {
+	public void setNextTrue(ExeFunNode<T, R> nextTrue) {
 		this.nextTrue = nextTrue;
 		this.nextTrue.setParent(this);
 	}
 
-	public void setNextFalse(ExeFunNode nextFalse) {
+	public void setNextFalse(ExeFunNode<T, R> nextFalse) {
 		this.nextFalse = nextFalse;
 		this.nextFalse.setParent(this);
 	}
 
-	public void setNextOr(ExeFunNode nextOr) {
+	public void setNextOr(ExeFunNode<T, R> nextOr) {
 		this.nextOr = nextOr;
 		this.nextOr.setParent(this);
 	}
 
-	public void setNextDo(ExeFunNode nextDo) {
+	public void setNextDo(ExeFunNode<T, R> nextDo) {
 		this.nextDo = nextDo;
 		this.nextDo.setParent(this);
 	}
 
-	public ExeFunNode( ExeFun node) {
+	public ExeFunNode(ExeFun<T, R> node) {
 		super();
 		this.node = node;
 	}

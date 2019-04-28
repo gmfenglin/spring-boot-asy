@@ -11,35 +11,38 @@ public class Chain {
 	 * .doFilter((result) -> { return null; }, (result) -> { return false; })
 	 * 
 	 **/
-	public <T, R> Chain doFilter(Function<T, R> fun, Predicate<R> predicate) {
+	public <T, R> Chain flow(Function<T, R> fun, Predicate<R> predicate) {
 		manger.setNextCondition(new ExeFunNode(new ExeFun(fun, predicate)));
 		return this;
 	}
-
-	public <T, R> Chain doOrFilter(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
+	public <T, R> Chain then(Function<T, R> fun, Predicate<R> predicate) {
+		manger.setNextThen(new ExeFunNode(new ExeFun(fun, predicate)));
+		return this;
+	}
+	public <T, R> Chain or(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
 		manger.setNextOr(new ExeFunNode(new ExeFun(fun, predicate)));
 		return this;
 	}
 
-	public <T, R> Chain doUnionFilter(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
+	public <T, R> Chain union(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
 		manger.setNextDo(new ExeFunNode(new ExeFun(fun, predicate)));
 		return this;
 	}
 
-	public <T, R> Chain doTrueFilter(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
+	public <T, R> Chain yes(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
 		manger.setNextTrue(new ExeFunNode(new ExeFun(fun, predicate)));
 		return this;
 	}
 
-	public <T, R> Chain doFalseFilter(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
+	public <T, R> Chain no(Function<T, R> fun, Predicate<R> predicate) throws FilterOrderException {
 		manger.setNextFalse(new ExeFunNode(new ExeFun(fun, predicate)));
 		return this;
 	}
 
-	public void finish(ChainResult chainResult) {
-
+	public void ok(ChainResult result) {
 		ChainResult tmp = manger.exec(manger.getRoot(), null, false);
-		chainResult.setFlag(tmp.isFlag());
-		chainResult.setResult(tmp.getResult());
+		result.setFlag(tmp.isFlag());
+		result.setResult(tmp.getResult());
+
 	}
 }
