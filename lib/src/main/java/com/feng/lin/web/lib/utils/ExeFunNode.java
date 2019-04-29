@@ -1,83 +1,85 @@
 package com.feng.lin.web.lib.utils;
 
-public class ExeFunNode<T, R> {
-	private ExeFunNode<T, R> parent;
-	private ExeFun<T, R> node;
-	private ExeFunNode<T, R> nextCondition;
-	private ExeFunNode<T, R> nextThen;
-	private ExeFunNode<T, R> nextTrue;
-	private ExeFunNode<T, R> nextFalse;
-	private ExeFunNode<T, R> nextOr;
-	private ExeFunNode<T, R> nextDo;
+import java.util.function.Function;
 
-	public ExeFunNode<T, R> getNextThen() {
+public class ExeFunNode<T, I, H> {
+	private ExeFunNode<T, I, H> parent;
+	private Function<T, ExecResult<I, H>> node;
+	private ExeFunNode<T, I, H> nextCondition;
+	private ExeFunNode<T, I, H> nextThen;
+	private ExeFunNode<T, I, H> nextTrue;
+	private ExeFunNode<T, I, H> nextFalse;
+	private ExeFunNode<T, I, H> nextOr;
+	private ExeFunNode<T, I, H> nextDo;
+
+	public ExeFunNode<T, I, H> getNextThen() {
 		return nextThen;
 	}
 
-	public void setNextThen(ExeFunNode<T, R> nextThen) {
+	public void setNextThen(ExeFunNode<T, I, H> nextThen) {
 		this.nextThen = nextThen;
 		this.nextThen.setParent(this);
 	}
 
-	public void setParent(ExeFunNode<T, R> parent) {
+	public void setParent(ExeFunNode<T, I, H> parent) {
 		this.parent = parent;
 	}
 
-	public ExeFunNode<T, R> getParent() {
+	public ExeFunNode<T, I, H> getParent() {
 		return parent;
 	}
 
-	public ExeFunNode<T, R> getNextCondition() {
+	public ExeFunNode<T, I, H> getNextCondition() {
 		return nextCondition;
 	}
 
-	public ExeFunNode<T, R> getNextTrue() {
+	public ExeFunNode<T, I, H> getNextTrue() {
 		return nextTrue;
 	}
 
-	public ExeFunNode<T, R> getNextFalse() {
+	public ExeFunNode<T, I, H> getNextFalse() {
 		return nextFalse;
 	}
 
-	public ExeFunNode<T, R> getNextOr() {
+	public ExeFunNode<T, I, H> getNextOr() {
 		return nextOr;
 	}
 
-	public ExeFunNode<T, R> getNextDo() {
+	public ExeFunNode<T, I, H> getNextDo() {
 		return nextDo;
 	}
 
-	public ExeFun<T, R> getNode() {
+	public Function<T, ExecResult<I, H>> getNode() {
 		return node;
 	}
 
-	public void setNextCondition(ExeFunNode<T, R> nextCondition) {
+	public void setNextCondition(ExeFunNode<T, I, H> nextCondition) {
 
 		this.nextCondition = nextCondition;
 		this.nextCondition.setParent(this);
 	}
 
-	public void setNextTrue(ExeFunNode<T, R> nextTrue) {
+	public void setNextTrue(ExeFunNode<T, I, H> nextTrue) {
 		this.nextTrue = nextTrue;
 		this.nextTrue.setParent(this);
 	}
 
-	public void setNextFalse(ExeFunNode<T, R> nextFalse) {
+	public void setNextFalse(ExeFunNode<T, I, H> nextFalse) {
 		this.nextFalse = nextFalse;
 		this.nextFalse.setParent(this);
 	}
 
-	public void setNextOr(ExeFunNode<T, R> nextOr) {
+	public void setNextOr(ExeFunNode<T, I, H> nextOr) {
 		this.nextOr = nextOr;
 		this.nextOr.setParent(this);
 	}
 
-	public void setNextDo(ExeFunNode<T, R> nextDo) {
+	public void setNextDo(ExeFunNode<T, I, H> nextDo) {
 		this.nextDo = nextDo;
 		this.nextDo.setParent(this);
 	}
 
-	public ExeFunNode(ExeFun<T, R> node) {
+	public ExeFunNode(Function<T, ExecResult<I, H>> node) {
 		super();
 		this.node = node;
 	}

@@ -1,15 +1,18 @@
 package com.feng.lin.web.lib.utils;
 
-public class NodeManager<T, R> {
-	private ExeFunNode<T, R> root = new ExeFunNode(null);
-	private ExeFunNode<T, R> last = root;
-	private ExeFunNode<T, R> current = null;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-	public ExeFunNode<T, R> getRoot() {
+public class NodeManager<T, I, H> {
+	private ExeFunNode<T, I, H> root = new ExeFunNode(null);
+	private ExeFunNode<T, I, H> last = root;
+	private ExeFunNode<T, I, H> current = null;
+
+	public ExeFunNode<T, I, H> getRoot() {
 		return root;
 	}
 
-	public void setNextCondition(ExeFunNode<T, R> nextCondition) {
+	public void setNextCondition(ExeFunNode<T, I, H> nextCondition) {
 		this.current = nextCondition;
 		last.setNextCondition(this.current);
 		last = current;
@@ -17,7 +20,7 @@ public class NodeManager<T, R> {
 
 	}
 
-	public void setNextThen(ExeFunNode<T, R> nextThen) {
+	public void setNextThen(ExeFunNode<T, I, H> nextThen) {
 		this.current = nextThen;
 		last.setNextThen(this.current);
 		last = current;
@@ -25,14 +28,14 @@ public class NodeManager<T, R> {
 
 	}
 
-	public void setNextTrue(ExeFunNode<T, R> nextTrue) {
+	public void setNextTrue(ExeFunNode<T, I, H> nextTrue) {
 		this.current = nextTrue;
 		last.setNextTrue(this.current);
 		last = current;
 		current = null;
 	}
 
-	public void setNextFalse(ExeFunNode<T, R> nextFalse) throws FilterOrderException {
+	public void setNextFalse(ExeFunNode<T, I, H> nextFalse) throws FilterOrderException {
 		this.current = nextFalse;
 		while (last.getNextTrue() == null || last.getNextFalse() != null) {
 			last = last.getParent();
@@ -46,9 +49,9 @@ public class NodeManager<T, R> {
 		current = null;
 	}
 
-	public void setNextOr(ExeFunNode<T, R> nextOr) {
+	public void setNextOr(ExeFunNode<T, I, H> nextOr) {
 		this.current = nextOr;
-		ExeFunNode<T, R> tmp = last;
+		ExeFunNode<T, I, H> tmp = last;
 		while (last.getNextThen() == null || last.getNextOr() != null) {
 			last = last.getParent();
 			if (last == null) {
@@ -62,7 +65,7 @@ public class NodeManager<T, R> {
 		current = null;
 	}
 
-	public void setNextDo(ExeFunNode<T, R> nextDo) throws FilterOrderException {
+	public void setNextDo(ExeFunNode<T, I, H> nextDo) throws FilterOrderException {
 		this.current = nextDo;
 		while (last.getNextOr() == null || last.getNextDo() != null) {
 			last = last.getParent();
@@ -76,15 +79,16 @@ public class NodeManager<T, R> {
 		current = null;
 	}
 
-	public ChainResult exec(ExeFunNode<T, R> node, Object result, boolean flag) {
+	public ChainResult exec(ExeFunNode<Object, I, H> node, Object result, boolean flag) {
 		if (node == null) {
 			return new ChainResult(flag, result);
 		}
-		ExeFun exeFun = node.getNode();
+		Function<Object, ExecResult<I, H>> exeFun = node.getNode();
 		if (exeFun != null) {
-			ExeFunNode<T, R> tmp = null;
-			result = exeFun.getFun().apply(result);
-			flag = exeFun.getPredicate().test(result);
+			ExeFunNode<Object, I, H> tmp = null;
+			ExecResult<I, H> execResult = exeFun.apply(result);
+			result = execResult.getResult();
+			flag = execResult.getExecFlag();
 			if (flag) {
 				tmp = node.getNextTrue();
 
@@ -96,11 +100,11 @@ public class NodeManager<T, R> {
 					if (tmp != null) {
 						ChainResult chainResult = exec(tmp, result, flag);
 						if (chainResult.isFlag()) {
-							return exec(node.getNextDo(), chainResult, flag);
+							return exec(node.getNextDo(), chainResult.getResult(), chainResult.isFlag());
 						}
 						return chainResult;
 					}
-				} 
+				}
 				if (tmp == null) {
 					tmp = node.getNextDo();
 				}
@@ -117,7 +121,7 @@ public class NodeManager<T, R> {
 					if (tmp != null) {
 						ChainResult chainResult = exec(tmp, result, flag);
 						if (chainResult.isFlag()) {
-							return exec(node.getNextDo(), chainResult, flag);
+							return exec(node.getNextDo(), chainResult.getResult(), chainResult.isFlag());
 						}
 						return chainResult;
 					}
